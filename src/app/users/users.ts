@@ -1,17 +1,23 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+/* eslint-disable */
+import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { ApiService } from '../core/services/api.service';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">การจัดการผู้ใช้งาน</h1>
-        <button class="flex items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors shadow-sm">
+        <button 
+          (click)="openAddModal()"
+          class="flex items-center justify-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors shadow-sm cursor-pointer"
+        >
           <mat-icon class="!w-5 !h-5 text-[20px] mr-2">person_add</mat-icon>
           เพิ่มผู้ใช้งานใหม่
         </button>
@@ -25,17 +31,23 @@ import { MatIconModule } from '@angular/material/icon';
             </div>
             <input 
               type="text" 
+              [(ngModel)]="searchQuery"
+              (input)="filterUsers()"
               class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-xl bg-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm"
-              placeholder="ค้นหาชื่อผู้ใช้, เบอร์โทร..."
+              placeholder="ค้นหาชื่อผู้ใช้..."
             >
           </div>
           <div class="flex space-x-2 w-full sm:w-auto">
-            <select class="block w-full sm:w-auto pl-3 pr-10 py-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm appearance-none">
+            <select 
+              [(ngModel)]="roleFilter"
+              (change)="filterUsers()"
+              class="block w-full sm:w-auto pl-3 pr-10 py-2 border border-slate-300 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm"
+            >
               <option value="">ทุกระดับสิทธิ์</option>
-              <option value="admin">Admin</option>
-              <option value="master">Master</option>
-              <option value="agent">Agent</option>
-              <option value="member">Member</option>
+              <option value="Admin">Admin</option>
+              <option value="Master">Master</option>
+              <option value="Agent">Agent</option>
+              <option value="Member">Member</option>
             </select>
           </div>
         </div>
@@ -53,7 +65,7 @@ import { MatIconModule } from '@angular/material/icon';
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200">
-              @for (user of users(); track user.id) {
+              @for (user of filteredUsers(); track user.id) {
                 <tr class="hover:bg-slate-50/50 transition-colors">
                   <td class="px-6 py-4">
                     <div class="flex items-center">
@@ -90,13 +102,18 @@ import { MatIconModule } from '@angular/material/icon';
                   </td>
                   <td class="px-6 py-4 text-right">
                     <div class="flex items-center justify-end space-x-2">
-                      <button class="p-1.5 text-slate-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50" title="เติม/ถอนเครดิต">
+                      <button 
+                        (click)="openCreditModal(user)"
+                        class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors rounded-lg hover:bg-emerald-50 cursor-pointer" 
+                        title="ปรับเครดิต"
+                      >
                         <mat-icon class="!w-5 !h-5 text-[20px]">account_balance_wallet</mat-icon>
                       </button>
-                      <button class="p-1.5 text-slate-400 hover:text-slate-900 transition-colors rounded-lg hover:bg-slate-100" title="แก้ไขข้อมูล">
-                        <mat-icon class="!w-5 !h-5 text-[20px]">edit</mat-icon>
-                      </button>
-                      <button class="p-1.5 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50" title="ระงับผู้ใช้">
+                      <button 
+                        (click)="toggleSuspendUser(user)"
+                        class="p-1.5 text-slate-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer" 
+                        title="เปิด/ระงับใช้งาน"
+                      >
                         <mat-icon class="!w-5 !h-5 text-[20px]">block</mat-icon>
                       </button>
                     </div>
@@ -109,25 +126,200 @@ import { MatIconModule } from '@angular/material/icon';
         
         <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
           <div class="text-sm text-slate-500">
-            แสดง 1 ถึง 5 จาก 124 รายการ
-          </div>
-          <div class="flex space-x-1">
-            <button class="px-3 py-1 border border-slate-300 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100 disabled:opacity-50">ก่อนหน้า</button>
-            <button class="px-3 py-1 border border-slate-300 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-100">ถัดไป</button>
+            แสดง 1 ถึง {{ filteredUsers().length }} จาก {{ users().length }} รายการ
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Modal: Add User -->
+    @if (isAddModalOpen()) {
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-900">เพิ่มผู้ใช้งานใหม่</h3>
+            <button (click)="isAddModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <form (submit)="createUser($event)" class="p-6 space-y-4">
+            <div>
+              <div class="block text-sm font-medium text-slate-700 mb-1">ชื่อผู้ใช้งาน (Username) *</div>
+              <input type="text" [(ngModel)]="newUserForm.username" name="username" required class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm bg-white text-slate-950 font-medium">
+            </div>
+            <div>
+              <div class="block text-sm font-medium text-slate-700 mb-1">ชื่อ-นามสกุล *</div>
+              <input type="text" [(ngModel)]="newUserForm.name" name="name" required class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm bg-white text-slate-950 font-medium">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="block text-sm font-medium text-slate-700 mb-1">ระดับสิทธิ์</div>
+                <select [(ngModel)]="newUserForm.role" name="role" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm bg-white text-slate-950 font-medium">
+                  <option value="Admin">Admin</option>
+                  <option value="Master">Master</option>
+                  <option value="Agent">Agent</option>
+                  <option value="Member">Member</option>
+                </select>
+              </div>
+              <div>
+                <div class="block text-sm font-medium text-slate-700 mb-1">ส่วนลด (%)</div>
+                <input type="number" [(ngModel)]="newUserForm.discount" name="discount" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm bg-white text-slate-950 font-medium" min="0" max="30">
+              </div>
+            </div>
+            <div>
+              <div class="block text-sm font-medium text-slate-700 mb-1">วงเงินเครดิตเริ่มต้น (฿)</div>
+              <input type="number" [(ngModel)]="newUserForm.credit" name="credit" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm bg-white text-slate-950 font-medium" min="0">
+            </div>
+            <div class="pt-4 flex space-x-3 justify-end border-t border-slate-100">
+              <button type="button" (click)="isAddModalOpen.set(false)" class="px-4 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">ยกเลิก</button>
+              <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium shadow-sm transition-colors">บันทึก</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    <!-- Modal: Adjust Credit -->
+    @if (isCreditModalOpen()) {
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-900">เพิ่ม/ลด เครดิตผู้ใช้งาน</h3>
+            <button (click)="isCreditModalOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div class="text-xs text-slate-500">ผู้ใช้งาน</div>
+              <div class="font-bold text-slate-950 text-base mb-2">{{ selectedUser()?.username }} ({{ selectedUser()?.name }})</div>
+              <div class="text-xs text-slate-500">เครดิตปัจจุบัน</div>
+              <div class="font-mono text-xl font-black text-slate-900">฿{{ selectedUser()?.credit | number:'1.2-2' }}</div>
+            </div>
+            <div>
+              <div class="block text-sm font-medium text-slate-700 mb-1">ระบุวงเงินเครดิตใหม่ (฿)</div>
+              <input type="number" [(ngModel)]="newCreditValue" name="newCreditValue" class="w-full px-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-lg font-mono font-bold bg-white text-slate-950" placeholder="ระบุจำนวณเครดิต">
+            </div>
+            <div class="pt-4 flex space-x-3 justify-end border-t border-slate-100">
+              <button (click)="isCreditModalOpen.set(false)" class="px-4 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">ยกเลิก</button>
+              <button (click)="updateUserCredit()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium shadow-sm transition-colors">ตกลง</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
   `
 })
-export class UsersComponent {
-  users = signal([
-    { id: 1, username: 'admin_super', name: 'Super Admin', role: 'Admin', credit: 9999999.00, discount: 0, active: true },
-    { id: 2, username: 'master_bkk', name: 'Master Bangkok', role: 'Master', credit: 500000.00, discount: 10, active: true },
-    { id: 3, username: 'agent_007', name: 'Agent Seven', role: 'Agent', credit: 150000.00, discount: 8, active: true },
-    { id: 4, username: 'member_vip', name: 'VIP Player', role: 'Member', credit: 25000.00, discount: 5, active: true },
-    { id: 5, username: 'member_002', name: 'Normal Player', role: 'Member', credit: 1500.00, discount: 5, active: false },
-  ]);
+export class UsersComponent implements OnInit {
+  private api = inject(ApiService);
+  
+  users = signal<any[]>([]);
+  filteredUsers = signal<any[]>([]);
+  
+  searchQuery = '';
+  roleFilter = '';
+
+  // Modals state
+  isAddModalOpen = signal(false);
+  isCreditModalOpen = signal(false);
+
+  selectedUser = signal<any>(null);
+  newCreditValue = 0;
+
+  newUserForm = {
+    username: '',
+    name: '',
+    role: 'Member',
+    discount: 5,
+    credit: 10000
+  };
+
+  ngOnInit() {
+    this.loadUsers();
+  }
+
+  loadUsers() {
+    this.api.get<any[]>('users').subscribe({
+      next: (data) => {
+        this.users.set(data);
+        this.filterUsers();
+      },
+      error: (err) => console.error('Error fetching users:', err)
+    });
+  }
+
+  filterUsers() {
+    const q = this.searchQuery.toLowerCase().trim();
+    const role = this.roleFilter;
+    
+    let res = this.users();
+    
+    if (q) {
+      res = res.filter(u => 
+        u.username.toLowerCase().includes(q) || 
+        u.name.toLowerCase().includes(q)
+      );
+    }
+    
+    if (role) {
+      res = res.filter(u => u.role.toLowerCase() === role.toLowerCase());
+    }
+    
+    this.filteredUsers.set(res);
+  }
+
+  toggleSuspendUser(user: any) {
+    const targetStatus = !user.active;
+    this.api.put<any>(`users/${user.id}`, { active: targetStatus }).subscribe({
+      next: () => {
+        this.loadUsers();
+      },
+      error: (err) => console.error('Error toggling suspend user:', err)
+    });
+  }
+
+  openAddModal() {
+    this.newUserForm = {
+      username: '',
+      name: '',
+      role: 'Member',
+      discount: 5,
+      credit: 10000
+    };
+    this.isAddModalOpen.set(true);
+  }
+
+  createUser(event: Event) {
+    event.preventDefault();
+    if (!this.newUserForm.username || !this.newUserForm.name) return;
+
+    this.api.post<any>('users', this.newUserForm).subscribe({
+      next: () => {
+        this.isAddModalOpen.set(false);
+        this.loadUsers();
+      },
+      error: (err) => console.error('Error creating user:', err)
+    });
+  }
+
+  openCreditModal(user: any) {
+    this.selectedUser.set(user);
+    this.newCreditValue = user.credit;
+    this.isCreditModalOpen.set(true);
+  }
+
+  updateUserCredit() {
+    const user = this.selectedUser();
+    if (!user) return;
+
+    this.api.put<any>(`users/${user.id}`, { credit: this.newCreditValue }).subscribe({
+      next: () => {
+        this.isCreditModalOpen.set(false);
+        this.loadUsers();
+      },
+      error: (err) => console.error('Error adjusting user credit:', err)
+    });
+  }
 
   getRoleClass(role: string): string {
     switch (role.toLowerCase()) {

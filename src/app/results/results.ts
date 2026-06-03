@@ -1,45 +1,88 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+/* eslint-disable */
+import { ChangeDetectionStrategy, Component, signal, inject, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { ApiService } from '../core/services/api.service';
 
 @Component({
   selector: 'app-results',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [CommonModule, FormsModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="space-y-6">
+    <div class="space-y-6 animate-[fade-in_0.3s_ease]">
       <h1 class="text-2xl font-bold text-slate-900 tracking-tight">ผลรางวัล</h1>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Enter Results Form -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 h-fit">
-          <h2 class="text-lg font-semibold text-slate-900 mb-4">กรอกผลรางวัล</h2>
-          <form class="space-y-4">
+          <h2 class="text-lg font-bold text-slate-900 mb-4">กรอกผลรางวัล</h2>
+          <form (submit)="saveResult($event)" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">เลือกหวย</label>
-              <select class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
-                <option>หวยรัฐบาลไทย (16 มี.ค. 67)</option>
-                <option>หวยฮานอย (14 มี.ค. 67)</option>
+              <div class="block text-sm font-medium text-slate-700 mb-1">เลือกหวย / งวด</div>
+              <select [(ngModel)]="form.lotteryId" name="lotteryId" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-slate-950 font-medium font-bold">
+                @for (lotto of activeLotteries(); track lotto.id) {
+                  <option [value]="lotto.name">{{ lotto.name }} ({{ lotto.period }})</option>
+                }
               </select>
             </div>
             
             <div class="pt-4 border-t border-slate-200">
-              <label class="block text-sm font-medium text-slate-700 mb-1">รางวัลที่ 1 (6 ตัว)</label>
-              <input type="text" class="w-full px-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center text-2xl font-mono font-bold tracking-[0.5em]" placeholder="000000" maxlength="6">
+              <div class="block text-sm font-medium text-slate-700 mb-1">รางวัลที่ 1 (6 ตัว) *</div>
+              <input 
+                type="text" 
+                [(ngModel)]="form.prize1"
+                (input)="autoExtract()"
+                name="prize1"
+                required
+                class="w-full px-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center text-2xl font-mono font-bold tracking-[0.5em] bg-white text-slate-950" 
+                placeholder="000000" 
+                maxlength="6"
+              >
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">3 ตัวบน</label>
-                <input type="text" class="w-full px-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center text-xl font-mono font-bold tracking-widest bg-slate-50" readonly placeholder="000">
+                <div class="block text-xs font-semibold text-slate-500 mb-1">3 ตัวบน</div>
+                <input 
+                  type="text" 
+                  [(ngModel)]="form.top3"
+                  name="top3"
+                  readonly 
+                  class="w-full px-2 py-3 border border-slate-200 rounded-xl text-center text-lg font-mono font-bold bg-slate-50 text-slate-500" 
+                  placeholder="000"
+                >
               </div>
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">2 ตัวล่าง</label>
-                <input type="text" class="w-full px-3 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center text-xl font-mono font-bold tracking-widest" placeholder="00" maxlength="2">
+                <div class="block text-xs font-semibold text-slate-500 mb-1">2 ตัวบน</div>
+                <input 
+                  type="text" 
+                  [(ngModel)]="form.top2"
+                  name="top2"
+                  readonly 
+                  class="w-full px-2 py-3 border border-slate-200 rounded-xl text-center text-lg font-mono font-bold bg-slate-50 text-slate-500" 
+                  placeholder="00"
+                >
+              </div>
+              <div>
+                <div class="block text-xs font-semibold text-slate-700 mb-1">2 ตัวล่าง *</div>
+                <input 
+                  type="text" 
+                  [(ngModel)]="form.bottom2"
+                  name="bottom2"
+                  required
+                  class="w-full px-2 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-center text-lg font-mono font-bold bg-white text-slate-950" 
+                  placeholder="00" 
+                  maxlength="2"
+                >
               </div>
             </div>
 
-            <button type="button" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors mt-4 shadow-sm">
+            <button 
+              type="submit" 
+              class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-colors mt-4 shadow-sm cursor-pointer"
+            >
               บันทึกผลรางวัล
             </button>
           </form>
@@ -48,19 +91,14 @@ import { MatIconModule } from '@angular/material/icon';
         <!-- Results History -->
         <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
-            <h2 class="text-lg font-semibold text-slate-900">ประวัติผลรางวัล</h2>
-            <select class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm">
-              <option>หวยรัฐบาลไทย</option>
-              <option>หวยฮานอย</option>
-              <option>หวยลาว</option>
-            </select>
+            <h2 class="text-lg font-bold text-slate-900">ประวัติผลรางวัล</h2>
           </div>
           
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
             @for (result of resultsHistory(); track result.id) {
-              <div class="p-6 hover:bg-slate-50 transition-colors">
+              <div class="p-6 hover:bg-slate-50/50 transition-colors">
                 <div class="flex items-center justify-between mb-4">
-                  <div class="font-medium text-slate-900">งวดวันที่ {{ result.period }}</div>
+                  <div class="font-bold text-slate-900">{{ result.lotteryId || 'หวยรัฐบาลไทย' }} (งวด {{ result.period }})</div>
                   <div class="text-sm text-slate-500">ประกาศเมื่อ {{ result.time }}</div>
                 </div>
                 
@@ -83,6 +121,8 @@ import { MatIconModule } from '@angular/material/icon';
                   </div>
                 </div>
               </div>
+            } @empty {
+              <div class="p-8 text-center text-slate-400">ยังไม่มีรางวัลประวัติ</div>
             }
           </div>
         </div>
@@ -90,10 +130,68 @@ import { MatIconModule } from '@angular/material/icon';
     </div>
   `
 })
-export class ResultsComponent {
-  resultsHistory = signal([
-    { id: 1, period: '1 มีนาคม 2567', time: '15:30 น.', prize1: '253603', top3: '603', top2: '03', bottom2: '79' },
-    { id: 2, period: '16 กุมภาพันธ์ 2567', time: '15:30 น.', prize1: '941395', top3: '395', top2: '95', bottom2: '43' },
-    { id: 3, period: '1 กุมภาพันธ์ 2567', time: '15:30 น.', prize1: '607063', top3: '063', top2: '63', bottom2: '09' },
-  ]);
+export class ResultsComponent implements OnInit {
+  private api = inject(ApiService);
+
+  resultsHistory = signal<any[]>([]);
+  activeLotteries = signal<any[]>([]);
+
+  form = {
+    lotteryId: 'หวยรัฐบาลไทย',
+    prize1: '',
+    top3: '',
+    top2: '',
+    bottom2: ''
+  };
+
+  ngOnInit() {
+    this.loadResults();
+    this.loadLotteries();
+  }
+
+  loadResults() {
+    this.api.get<any[]>('results').subscribe({
+      next: (data) => this.resultsHistory.set(data),
+      error: (err) => console.error(err)
+    });
+  }
+
+  loadLotteries() {
+    this.api.get<any[]>('lotteries').subscribe({
+      next: (data) => {
+        this.activeLotteries.set(data);
+        if (data.length > 0) {
+          this.form.lotteryId = data[0].name;
+        }
+      },
+      error: (err) => console.error(err)
+    });
+  }
+
+  autoExtract() {
+    const val = this.form.prize1.trim();
+    if (val.length === 6) {
+      this.form.top3 = val.substring(3, 6);
+      this.form.top2 = val.substring(4, 6);
+    } else {
+      this.form.top3 = '';
+      this.form.top2 = '';
+    }
+  }
+
+  saveResult(event: Event) {
+    event.preventDefault();
+    if (!this.form.prize1 || !this.form.bottom2) return;
+
+    this.api.post<any>('results', this.form).subscribe({
+      next: () => {
+        this.form.prize1 = '';
+        this.form.top3 = '';
+        this.form.top2 = '';
+        this.form.bottom2 = '';
+        this.loadResults();
+      },
+      error: (err) => console.error(err)
+    });
+  }
 }

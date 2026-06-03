@@ -52,6 +52,17 @@ export class AuthService {
     console.log('👋 ออกจากระบบแล้ว');
   }
 
+  updateUserBalance(balance: number): void {
+    const current = this.currentUserSignal();
+    if (current) {
+      const updated = { ...current, balance };
+      this.currentUserSignal.set(updated);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user_data', JSON.stringify(updated));
+      }
+    }
+  }
+
   getToken(): string | null {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('access_token');

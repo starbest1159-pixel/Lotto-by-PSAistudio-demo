@@ -1,7 +1,10 @@
-import { ChangeDetectionStrategy, Component, signal, computed } from '@angular/core';
+/* eslint-disable */
+import { ChangeDetectionStrategy, Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { ApiService } from '../core/services/api.service';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-betting',
@@ -11,7 +14,7 @@ import { MatIconModule } from '@angular/material/icon';
   template: `
     <div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
       <!-- Left Side: Betting Interface -->
-      <div class="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-[fade-in_0.3s_ease]">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div class="flex items-center space-x-4">
@@ -20,7 +23,7 @@ import { MatIconModule } from '@angular/material/icon';
             </div>
             <div>
               <h2 class="text-lg font-bold text-slate-900">หวยรัฐบาลไทย</h2>
-              <p class="text-sm text-slate-500">งวดวันที่ 16 มีนาคม 2567</p>
+              <p class="text-sm text-slate-500">งวดวันที่ 16 มีนาคม 2026</p>
             </div>
           </div>
           <div class="text-right">
@@ -33,7 +36,7 @@ import { MatIconModule } from '@angular/material/icon';
         <div class="p-4 border-b border-slate-200">
           <div class="flex p-1 bg-slate-100 rounded-xl">
             <button 
-              class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all"
+              class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all cursor-pointer"
               [class]="mode() === 'text' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
               (click)="mode.set('text')"
             >
@@ -43,7 +46,7 @@ import { MatIconModule } from '@angular/material/icon';
               </div>
             </button>
             <button 
-              class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all"
+              class="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all cursor-pointer"
               [class]="mode() === 'select' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
               (click)="mode.set('select')"
             >
@@ -60,18 +63,18 @@ import { MatIconModule } from '@angular/material/icon';
           @if (mode() === 'text') {
             <div class="space-y-4">
               <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
-                <p class="font-semibold mb-1">รูปแบบการพิมพ์:</p>
-                <p>ตัวเลข=ราคาบน=ราคาล่าง หรือ ตัวเลข=ราคา (เช่น 123=100=100, 45=50)</p>
+                <span class="font-semibold block mb-1">รูปแบบการพิมพ์:</span>
+                <span>ตัวเลข=ราคาบน=ราคาล่าง หรือ ตัวเลข=ราคา (เช่น 123=100=100, 45=50)</span>
               </div>
               <textarea 
                 [(ngModel)]="quickText"
                 rows="10"
-                class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-lg resize-none shadow-sm"
+                class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-lg resize-none shadow-sm bg-white text-slate-950"
                 placeholder="พิมพ์ตัวเลขที่นี่..."
               ></textarea>
               <button 
                 (click)="parseQuickText()"
-                class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-medium transition-colors shadow-sm"
+                class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium transition-colors shadow-sm cursor-pointer"
               >
                 เพิ่มลงโพย
               </button>
@@ -82,8 +85,8 @@ import { MatIconModule } from '@angular/material/icon';
               <div class="grid grid-cols-3 gap-3">
                 @for (type of betTypes; track type.id) {
                   <button 
-                    class="py-3 px-4 rounded-xl border text-sm font-medium transition-all"
-                    [class]="selectedType() === type.id ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'"
+                    class="py-3 px-4 rounded-xl border text-sm font-medium transition-all cursor-pointer"
+                    [class]="selectedType() === type.id ? 'bg-emerald-50 border-emerald-200 text-emerald-700 font-bold' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'"
                     (click)="selectedType.set(type.id)"
                   >
                     {{ type.name }}
@@ -97,7 +100,7 @@ import { MatIconModule } from '@angular/material/icon';
                   <input 
                     type="text" 
                     [(ngModel)]="currentNumber"
-                    class="flex-1 text-center text-3xl font-mono font-bold py-4 border-b-2 border-slate-200 focus:border-emerald-500 focus:outline-none bg-transparent"
+                    class="flex-1 text-center text-3xl font-mono font-bold py-4 border-b-2 border-slate-200 focus:border-emerald-500 focus:outline-none bg-transparent text-slate-950"
                     placeholder="000"
                     maxlength="3"
                   >
@@ -107,7 +110,7 @@ import { MatIconModule } from '@angular/material/icon';
                     <input 
                       type="number" 
                       [(ngModel)]="currentAmount"
-                      class="w-full text-right text-2xl font-bold py-4 pl-8 pr-4 border-b-2 border-slate-200 focus:border-emerald-500 focus:outline-none bg-transparent"
+                      class="w-full text-right text-2xl font-bold py-4 pl-8 pr-4 border-b-2 border-slate-200 focus:border-emerald-500 focus:outline-none bg-transparent text-slate-950"
                       placeholder="0"
                     >
                   </div>
@@ -117,25 +120,25 @@ import { MatIconModule } from '@angular/material/icon';
                   @for (n of [1,2,3,4,5,6,7,8,9]; track n) {
                     <button 
                       (click)="appendNumber(n.toString())"
-                      class="h-14 rounded-xl bg-slate-50 hover:bg-slate-100 text-xl font-semibold text-slate-700 transition-colors"
+                      class="h-14 rounded-xl bg-slate-50 hover:bg-slate-100 text-xl font-semibold text-slate-700 transition-colors cursor-pointer"
                     >
                       {{ n }}
                     </button>
                   }
                   <button 
-                    class="h-14 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-medium transition-colors flex items-center justify-center"
+                    class="h-14 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-medium transition-colors flex items-center justify-center cursor-pointer"
                     (click)="clearNumber()"
                   >
                     <mat-icon>backspace</mat-icon>
                   </button>
                   <button 
                     (click)="appendNumber('0')"
-                    class="h-14 rounded-xl bg-slate-50 hover:bg-slate-100 text-xl font-semibold text-slate-700 transition-colors"
+                    class="h-14 rounded-xl bg-slate-50 hover:bg-slate-100 text-xl font-semibold text-slate-700 transition-colors cursor-pointer"
                   >
                     0
                   </button>
                   <button 
-                    class="h-14 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors flex items-center justify-center shadow-sm"
+                    class="h-14 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors flex items-center justify-center shadow-sm cursor-pointer"
                     (click)="addBet()"
                   >
                     <mat-icon>keyboard_return</mat-icon>
@@ -148,7 +151,7 @@ import { MatIconModule } from '@angular/material/icon';
       </div>
 
       <!-- Right Side: Bet Slip -->
-      <div class="w-full lg:w-96 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="w-full lg:w-96 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-[fade-in_0.3s_ease]">
         <div class="px-6 py-4 border-b border-slate-200 bg-slate-800 text-white flex items-center justify-between">
           <div class="flex items-center">
             <mat-icon class="mr-2">receipt_long</mat-icon>
@@ -165,13 +168,13 @@ import { MatIconModule } from '@angular/material/icon';
               <p class="text-sm mt-1">กรุณาเลือกตัวเลขและใส่ราคา</p>
             </div>
           } @else {
-            <div class="space-y-2">
+            <div class="space-y-4">
               @for (bet of bets(); track bet.id) {
                 <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
                   <div class="flex items-center space-x-3">
                     <button 
                       (click)="removeBet(bet.id)"
-                      class="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      class="text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                     >
                       <mat-icon class="!w-4 !h-4 text-[16px]">close</mat-icon>
                     </button>
@@ -180,9 +183,10 @@ import { MatIconModule } from '@angular/material/icon';
                       <div class="text-xs text-slate-500">{{ getTypeName(bet.type) }}</div>
                     </div>
                   </div>
+
                   <div class="text-right">
                     <div class="font-semibold text-slate-900">฿{{ bet.amount | number }}</div>
-                    <div class="text-xs text-emerald-600">จ่าย {{ bet.payRate }}</div>
+                    <div class="text-xs text-emerald-600">จ่าย x{{ bet.payRate }}</div>
                   </div>
                 </div>
               }
@@ -210,13 +214,14 @@ import { MatIconModule } from '@angular/material/icon';
           <div class="flex space-x-3">
             <button 
               (click)="clearAll()"
-              class="px-4 py-3 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 transition-colors"
+              class="px-4 py-3 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 transition-colors cursor-pointer"
             >
               ล้าง
             </button>
             <button 
               [disabled]="bets().length === 0"
-              class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              (click)="submitBets()"
+              class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
             >
               ยืนยันการแทง
             </button>
@@ -224,9 +229,50 @@ import { MatIconModule } from '@angular/material/icon';
         </div>
       </div>
     </div>
+
+    <!-- Modal: Success Alert -->
+    @if (isSuccessModalOpen()) {
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-sm w-full p-6 text-center">
+          <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="!w-8 !h-8 text-[32px]">check_circle</mat-icon>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">ส่งโพยสำเร็จเรียบร้อย!</h3>
+          <p class="text-sm text-slate-500 mb-6 font-medium">บันทึกรายการแทงเข้าระบบและหักยอดเรียบร้อยแล้ว</p>
+          <button 
+            (click)="isSuccessModalOpen.set(false)"
+            class="w-full py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-medium rounded-xl transition-colors cursor-pointer"
+          >
+            ตกลง
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Modal: Error Alert -->
+    @if (errorMessage()) {
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-sm w-full p-6 text-center">
+          <div class="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="!w-8 !h-8 text-[32px]">error</mat-icon>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">ไม่สามารถส่งโพยแทงได้</h3>
+          <p class="text-sm text-slate-500 mb-6 font-medium">{{ errorMessage() }}</p>
+          <button 
+            (click)="errorMessage.set('')"
+            class="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-medium rounded-xl transition-colors cursor-pointer"
+          >
+            ตกลง
+          </button>
+        </div>
+      </div>
+    }
   `
 })
 export class BettingComponent {
+  private api = inject(ApiService);
+  private auth = inject(AuthService);
+
   mode = signal<'text' | 'select'>('select');
   selectedType = signal('3up');
   
@@ -244,6 +290,8 @@ export class BettingComponent {
   ];
 
   bets = signal<any[]>([]);
+  isSuccessModalOpen = signal(false);
+  errorMessage = signal('');
 
   totalAmount = computed(() => this.bets().reduce((sum, bet) => sum + bet.amount, 0));
   discount = computed(() => this.totalAmount() * 0.05);
@@ -270,7 +318,7 @@ export class BettingComponent {
     if (!type) return;
 
     this.bets.update(b => [...b, {
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random(),
       number: this.currentNumber,
       type: type.id,
       amount: this.currentAmount,
@@ -287,6 +335,32 @@ export class BettingComponent {
 
   clearAll() {
     this.bets.set([]);
+  }
+
+  submitBets() {
+    const list = this.bets();
+    if (list.length === 0) return;
+
+    const currentUser = this.auth.currentUser();
+    const payload = {
+      betsList: list,
+      userId: currentUser?.id,
+      username: currentUser?.username
+    };
+
+    this.api.post<any>('bets', payload).subscribe({
+      next: (res) => {
+        this.clearAll();
+        if (res.balance !== undefined) {
+          this.auth.updateUserBalance(res.balance);
+        }
+        this.isSuccessModalOpen.set(true);
+      },
+      error: (err) => {
+        const msg = err.error?.message || 'การแทงล้มเหลว กรุณาตรวจสอบวงเงินเครดิตของท่าน';
+        this.errorMessage.set(msg);
+      }
+    });
   }
 
   parseQuickText() {

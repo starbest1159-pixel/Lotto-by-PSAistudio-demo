@@ -14,6 +14,16 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
                           req.url.includes('/auth/refresh');
 
   let headers = req.headers;
+  let url = req.url;
+
+  if (typeof window === 'undefined') {
+    const isRelative = !url.startsWith('http://') && !url.startsWith('https://');
+    if (isRelative && (url.includes('/api/') || url.includes('api/'))) {
+      const slash = url.startsWith('/') ? '' : '/';
+      const port = process.env['PORT'] || 3000;
+      url = `http://127.0.0.1:${port}${slash}${url}`;
+    }
+  }
 
   if (token && !isAuthEndpoint) {
     headers = headers.set('Authorization', `Bearer ${token}`);
@@ -32,7 +42,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  req = req.clone({ headers });
+  req = req.clone({ headers, url });
 
   return next(req);
 };

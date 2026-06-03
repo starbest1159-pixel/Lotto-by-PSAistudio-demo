@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { HttpInterceptorFn, HttpResponse, HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';

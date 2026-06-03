@@ -39,7 +39,7 @@ import { MatIconModule } from '@angular/material/icon';
             -5.4% จากเดือนที่แล้ว
           </div>
         </div>
-        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+        <div class="bg-emerald-600 rounded-2xl p-6 border border-emerald-500 shadow-sm text-white">
           <div class="text-sm font-medium text-emerald-100 mb-2">กำไร/ขาดทุน สุทธิ</div>
           <div class="text-3xl font-bold">฿2,209,500</div>
           <div class="text-sm text-emerald-100 mt-2 flex items-center">

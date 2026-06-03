@@ -23,12 +23,13 @@ import { AuthService } from '../core/services/auth.service';
 
           <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">ชื่อผู้ใช้งาน</label>
+              <label for="username" class="block text-sm font-medium text-slate-300 mb-2">ชื่อผู้ใช้งาน</label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <mat-icon class="text-slate-500 !w-5 !h-5 text-[20px]">person</mat-icon>
                 </div>
                 <input 
+                  id="username"
                   type="text" 
                   formControlName="username"
                   class="block w-full pl-10 pr-3 py-3 border border-slate-600 rounded-xl bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
@@ -38,12 +39,13 @@ import { AuthService } from '../core/services/auth.service';
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">รหัสผ่าน</label>
+              <label for="password" class="block text-sm font-medium text-slate-300 mb-2">รหัสผ่าน</label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <mat-icon class="text-slate-500 !w-5 !h-5 text-[20px]">lock</mat-icon>
                 </div>
                 <input 
+                  id="password"
                   [type]="showPassword() ? 'text' : 'password'" 
                   formControlName="password"
                   class="block w-full pl-10 pr-10 py-3 border border-slate-600 rounded-xl bg-slate-900/50 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
@@ -144,6 +146,7 @@ export class LoginComponent {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
+        console.error('Login error:', err);
         if (typeof window !== 'undefined') {
           let attempts = parseInt(localStorage.getItem(attemptsKey) || '0', 10);
           attempts++;
