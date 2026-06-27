@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile and balance information",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "balance": { "type": "number" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["username", "role", "balance"]
+    },
+    "lottery": {
+      "title": "Lottery",
+      "description": "Lottery game and draw information",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "flag": { "type": "string" },
+        "period": { "type": "string" },
+        "closeTime": { "type": "string" },
+        "status": { "type": "string" },
+        "totalBet": { "type": "number" },
+        "limit": { "type": "number" },
+        "progress": { "type": "number" }
+      },
+      "required": ["name", "status"]
+    },
+    "slip": {
+      "title": "Betting Slip",
+      "description": "A ticket representing a set of bets made by a user",
+      "type": "object",
+      "properties": {
+        "time": { "type": "string" },
+        "user": { "type": "string" },
+        "lotto": { "type": "string" },
+        "details": { "type": "string" },
+        "amount": { "type": "number" },
+        "payout": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["user", "lotto", "amount", "status"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "user",
+      "description": "User accounts"
+    },
+    "lotteries": {
+      "schema": "lottery",
+      "description": "List of lottery draws"
+    },
+    "slips": {
+      "schema": "slip",
+      "description": "Submitted lottery betting slips"
+    }
+  }
+}
