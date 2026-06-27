@@ -19,45 +19,47 @@ import { ApiService } from '../core/services/api.service';
       }
 
       <!-- Sidebar -->
-      <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-300 md:static md:translate-x-0" 
+      <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-300 md:static md:translate-x-0 border-r border-slate-800" 
              [class.translate-x-0]="sidebarOpen()" 
              [class.-translate-x-full]="!sidebarOpen()">
-        <div class="h-16 flex items-center px-6 border-b border-slate-800">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950/20">
           <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mr-3">
-            <mat-icon class="!w-5 !h-5 text-[20px]">casino</mat-icon>
+            <i class="bi bi-dice-5-fill text-lg"></i>
           </div>
-          <span class="text-white font-semibold tracking-wide text-lg">Lotto System</span>
+          <span class="text-white font-bold tracking-wide text-lg">Lotto System</span>
         </div>
         
-        <div class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <div class="flex-1 overflow-y-auto py-4 pr-3 pl-0 space-y-1">
           @for (item of menuItems; track item.path) {
             <a 
               [routerLink]="item.path" 
-              routerLinkActive="bg-emerald-500/10 text-emerald-400"
+              routerLinkActive="bg-[#12283f] text-emerald-400 font-bold border-l-4 border-emerald-500 rounded-r-xl"
+              [routerLinkActiveOptions]="{exact: item.path === '/dashboard'}"
               (click)="closeSidebarOnMobile()"
-              class="flex items-center px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors group"
+              class="flex items-center pl-5 pr-3 py-2.5 rounded-l-none rounded-r-xl hover:bg-slate-800 hover:text-white transition-all group text-slate-400"
+              #rla="routerLinkActive"
             >
-              <mat-icon class="!w-5 !h-5 text-[20px] mr-3 opacity-70 group-hover:opacity-100" [class.text-emerald-400]="router.isActive(item.path, false)">{{ item.icon }}</mat-icon>
+              <i [class]="item.icon" class="text-base mr-3 opacity-80 group-hover:opacity-100 transition-colors" [class.text-emerald-400]="rla.isActive"></i>
               <span class="font-medium text-sm">{{ item.label }}</span>
             </a>
           }
         </div>
         
-        <div class="p-4 border-t border-slate-800">
-          <div class="flex items-center px-3 py-2">
-            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold mr-3 uppercase">
+        <div class="p-4 border-t border-slate-800 bg-slate-950/10">
+          <div class="flex items-center px-2 py-2">
+            <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-black mr-3 uppercase shadow-xs">
               {{ authService.currentUser()?.username?.charAt(0) || 'A' }}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-white truncate">{{ authService.currentUser()?.username || 'Admin User' }}</p>
-              <p class="text-xs text-slate-500 truncate uppercase">{{ authService.currentUser()?.role || 'Super Admin' }}</p>
+              <p class="text-sm font-bold text-white truncate">{{ authService.currentUser()?.username || 'Admin User' }}</p>
+              <p class="text-[10px] text-slate-500 tracking-wider uppercase font-semibold mt-0.5">{{ authService.currentUser()?.role || 'Super Admin' }}</p>
             </div>
           </div>
           <button 
             (click)="logout()"
-            class="mt-2 w-full flex items-center justify-center px-3 py-2 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+            class="mt-3 w-full flex items-center justify-start pl-3 pr-2 py-2.5 rounded-xl text-xs font-bold text-red-400 hover:bg-red-500/10 transition-colors border border-transparent cursor-pointer"
           >
-            <mat-icon class="!w-4 !h-4 text-[16px] mr-2">logout</mat-icon>
+            <i class="bi bi-box-arrow-left text-base mr-2.5 text-red-400"></i>
             ออกจากระบบ
           </button>
         </div>
@@ -69,15 +71,16 @@ import { ApiService } from '../core/services/api.service';
         <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 z-10">
           <button 
             (click)="toggleSidebar()"
-            class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+            class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors flex items-center justify-center cursor-pointer"
+            aria-label="Toggle Sidebar"
           >
-            <mat-icon>{{ sidebarOpen() ? 'menu_open' : 'menu' }}</mat-icon>
+            <i [class]="sidebarOpen() ? 'bi bi-indent text-xl' : 'bi bi-list text-xl'"></i>
           </button>
           
           <div class="flex items-center space-x-4">
-            <div class="hidden sm:flex items-center text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
-              <mat-icon class="!w-4 !h-4 text-[16px] mr-1.5 text-emerald-500">account_balance_wallet</mat-icon>
-              เครดิต: <span class="text-slate-900 ml-1">{{ (authService.currentUser()?.balance || 1500000) | number }}</span>
+            <div class="hidden sm:flex items-center text-xs font-bold text-slate-600 bg-slate-100 px-3.5 py-2 rounded-full border border-slate-200 shadow-2xs">
+              <i class="bi bi-wallet2 mr-2 text-emerald-600 text-sm"></i>
+              เครดิต: <span class="text-slate-950 ml-1 font-black">฿{{ (authService.currentUser()?.balance || 1500000) | number }}</span>
             </div>
             
             <div class="relative">
@@ -86,9 +89,9 @@ import { ApiService } from '../core/services/api.service';
                 class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors relative cursor-pointer flex items-center justify-center"
                 aria-label="Toggle notifications dropdown"
               >
-                <mat-icon>notifications</mat-icon>
+                <i class="bi bi-bell text-xl"></i>
                 @if (unreadCount() > 0) {
-                  <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border border-white animate-pulse">
+                  <span class="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border border-white animate-pulse">
                     {{ unreadCount() }}
                   </span>
                 }
@@ -186,14 +189,14 @@ export class LayoutComponent implements OnInit, OnDestroy {
   }
 
   menuItems = [
-    { path: '/dashboard', label: 'ภาพรวมระบบ', icon: 'dashboard' },
-    { path: '/betting', label: 'ระบบรับแทง', icon: 'edit_note' },
-    { path: '/lotteries', label: 'จัดการหวย & งวด', icon: 'calendar_month' },
-    { path: '/users', label: 'การจัดการผู้ใช้งาน', icon: 'group' },
-    { path: '/links', label: 'ลิงก์รับแทง', icon: 'link' },
-    { path: '/risk', label: 'ความเสี่ยง & เลขอั้น', icon: 'gpp_maybe' },
-    { path: '/results', label: 'ผลรางวัล', icon: 'emoji_events' },
-    { path: '/reports', label: 'รายงาน', icon: 'receipt_long' },
+    { path: '/dashboard', label: 'ภาพรวมระบบ', icon: 'bi bi-grid-fill' },
+    { path: '/betting', label: 'ระบบรับแทง', icon: 'bi bi-pencil-square' },
+    { path: '/lotteries', label: 'จัดการหวย & งวด', icon: 'bi bi-calendar3' },
+    { path: '/users', label: 'การจัดการผู้ใช้งาน', icon: 'bi bi-people-fill' },
+    { path: '/links', label: 'ลิงก์รับแทง', icon: 'bi bi-link-45deg' },
+    { path: '/risk', label: 'ความเสี่ยง & เลขอั้น', icon: 'bi bi-shield-fill-exclamation' },
+    { path: '/results', label: 'ผลรางวัล', icon: 'bi bi-trophy-fill' },
+    { path: '/reports', label: 'รายงาน', icon: 'bi bi-file-earmark-text-fill' },
   ];
 
   toggleSidebar() {
