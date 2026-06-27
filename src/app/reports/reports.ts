@@ -11,11 +11,11 @@ import { MatIconModule } from '@angular/material/icon';
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">รายงาน</h1>
-        <div class="flex space-x-2">
-          <input type="date" class="px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm">
-          <span class="flex items-center text-slate-500">-</span>
-          <input type="date" class="px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm">
-          <button class="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors">
+        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <input type="date" class="flex-1 sm:flex-initial px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm min-w-[120px] bg-white text-slate-950 font-medium">
+          <span class="text-slate-400 font-bold">-</span>
+          <input type="date" class="flex-1 sm:flex-initial px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm min-w-[120px] bg-white text-slate-950 font-medium">
+          <button class="w-full sm:w-auto px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors cursor-pointer">
             ค้นหา
           </button>
         </div>
@@ -87,7 +87,10 @@ import { MatIconModule } from '@angular/material/icon';
                     <div class="font-medium text-slate-900">{{ slip.user }}</div>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="font-medium text-slate-900">{{ slip.lotto }}</div>
+                    <div class="font-medium text-slate-900 flex items-center">
+                      <span class="mr-1.5 text-base leading-none">{{ getLottoFlag(slip.lotto) }}</span>
+                      {{ slip.lotto }}
+                    </div>
                     <div class="text-xs text-slate-500">{{ slip.details }}</div>
                   </td>
                   <td class="px-6 py-4 text-right font-mono font-medium text-slate-900">
@@ -121,6 +124,15 @@ import { MatIconModule } from '@angular/material/icon';
   `
 })
 export class ReportsComponent {
+  getLottoFlag(name: string): string {
+    const lottoName = name || '';
+    if (lottoName.includes('ไทย') || lottoName.includes('TH')) return '🇹🇭';
+    if (lottoName.includes('ฮานอย') || lottoName.includes('เวียดนาม') || lottoName.includes('VN')) return '🇻🇳';
+    if (lottoName.includes('ลาว') || lottoName.includes('LA')) return '🇱🇦';
+    if (lottoName.includes('มาเลย์') || lottoName.includes('MY')) return '🇲🇾';
+    return '🎲';
+  }
+
   slips = signal([
     { id: '10293', time: '16 มี.ค. 67 14:30', user: 'user_001', lotto: 'หวยรัฐบาลไทย', details: '3 ตัวบน [603]', amount: 1500, payout: 1350000, status: 'won' },
     { id: '10292', time: '16 มี.ค. 67 14:25', user: 'member_99', lotto: 'หวยรัฐบาลไทย', details: '2 ตัวล่าง [79]', amount: 500, payout: 45000, status: 'won' },

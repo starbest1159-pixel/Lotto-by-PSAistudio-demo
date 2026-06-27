@@ -75,8 +75,8 @@ import { ApiService } from '../core/services/api.service';
                     <td class="px-6 py-4">
                       <div class="font-bold text-slate-900 mb-1">{{ link.name }}</div>
                       <div class="flex items-center text-xs text-slate-500 bg-slate-100 px-2 py-1.5 rounded-lg w-fit border border-slate-200 font-mono">
-                        <span class="truncate max-w-[150px] sm:max-w-[200px] font-semibold select-all">{{ link.url }}</span>
-                        <button (click)="copyToClipboard(link.url)" class="ml-2 text-emerald-600 hover:text-emerald-700 cursor-pointer" title="คัดลอกลิงก์">
+                        <span class="truncate max-w-[150px] sm:max-w-[200px] font-semibold select-all">{{ getFullUrl(link) }}</span>
+                        <button (click)="copyToClipboard(getFullUrl(link))" class="ml-2 text-emerald-600 hover:text-emerald-700 cursor-pointer" title="คัดลอกลิงก์">
                           <mat-icon class="!w-4 !h-4 text-[16px]">content_copy</mat-icon>
                         </button>
                       </div>
@@ -157,6 +157,18 @@ export class LinksComponent implements OnInit {
       },
       error: (err) => console.error(err)
     });
+  }
+
+  getFullUrl(link: any): string {
+    if (typeof window !== 'undefined') {
+      const url = link.url;
+      if (url.startsWith('http')) {
+        const path = url.substring(url.indexOf('/bet/'));
+        return window.location.origin + path;
+      }
+      return window.location.origin + url;
+    }
+    return link.url;
   }
 
   deleteLink(id: number) {

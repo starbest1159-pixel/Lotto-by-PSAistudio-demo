@@ -3,6 +3,10 @@ import { authGuard, guestGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
+    path: 'bet/:linkId',
+    loadComponent: () => import('./public-bet/public-bet').then(m => m.PublicBetComponent)
+  },
+  {
     path: 'login',
     canActivate: [guestGuard],
     loadComponent: () => import('./login/login').then(m => m.LoginComponent)

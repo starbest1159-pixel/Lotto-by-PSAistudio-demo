@@ -7,11 +7,33 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import {join} from 'node:path';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // support larger image base64 payloads
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+let aiClient: GoogleGenAI | null = null;
+
+function getGeminiClient(): GoogleGenAI {
+  if (!aiClient) {
+    const key = process.env['GEMINI_API_KEY'];
+    if (!key) {
+      throw new Error('GEMINI_API_KEY environment variable is required');
+    }
+    aiClient = new GoogleGenAI({
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return aiClient;
+}
 
 // Memory store for full-stack operation
 const users = [
@@ -47,9 +69,14 @@ const reducedNumbers = [
 ];
 
 const links = [
-  { id: '1', name: 'ลูกค้า VIP กลุ่ม A', url: 'https://lotto.app/bet/ref_a9b8c7', expires: 'ไม่มีวันหมดอายุ', active: true, totalBet: 150000 },
-  { id: '2', name: 'โปรโมชั่น Facebook', url: 'https://lotto.app/bet/ref_fb2024', expires: '30 เม.ย. 67', active: true, totalBet: 45000 },
-  { id: '3', name: 'ลูกค้าใหม่ทดลอง', url: 'https://lotto.app/bet/ref_test01', expires: '15 มี.ค. 67', active: false, totalBet: 500 }
+  { id: '1', name: 'ลูกค้า VIP กลุ่ม A', code: 'ref_a9b8c7', url: '/bet/ref_a9b8c7', expires: 'ไม่มีวันหมดอายุ', active: true, totalBet: 150000 },
+  { id: '2', name: 'โปรโมชั่น Facebook', code: 'ref_fb2024', url: '/bet/ref_fb2024', expires: '30 เม.ย. 67', active: true, totalBet: 45000 },
+  { id: '3', name: 'ลูกค้าใหม่ทดลอง', code: 'ref_test01', url: '/bet/ref_test01', expires: '15 มี.ค. 67', active: false, totalBet: 500 }
+];
+
+const notifications = [
+  { id: '1', title: 'ผู้ใช้งานใหม่ผ่านลิงก์', message: 'มีโพยแทงจาก ลิงก์ลูกค้า VIP กลุ่ม A ยอดรวม ฿15,000', time: '5 นาทีที่แล้ว', read: false },
+  { id: '2', title: 'แจ้งเตือนระบบ', message: 'ระบบหลังบ้านและเซิร์ฟเวอร์พร้อมเชื่อมต่อธนาคารพาณิชย์ 24 ชม.', time: '1 ชั่วโมงที่แล้ว', read: true }
 ];
 
 const resultsHistory = [
@@ -177,7 +204,7 @@ app.get('/api/v1/bets', (req, res) => {
 });
 
 app.post('/api/v1/bets', (req, res) => {
-  const { betsList, username } = req.body;
+  const { betsList, username, lottoName } = req.body;
   if (!betsList || !Array.isArray(betsList)) {
     return res.status(400).json({ message: 'Invalid bets list' });
   }
@@ -201,7 +228,7 @@ app.post('/api/v1/bets', (req, res) => {
       id: String(Math.floor(10000 + Math.random() * 90000)),
       time: new Date().toLocaleDateString('th-TH', { hour: '2-digit', minute: '2-digit' }),
       user: activeUser.username,
-      lotto: 'หวยรัฐบาลไทย',
+      lotto: lottoName || 'หวยรัฐบาลไทย',
       details: `${b.typeName || b.type} [${b.number}]`,
       amount: b.amount,
       payout: 0,
@@ -299,12 +326,26 @@ app.get('/api/v1/links', (req, res) => {
   res.status(200).json(links);
 });
 
+app.get('/api/v1/links/:code', (req, res) => {
+  const code = req.params.code;
+  const link = links.find(l => l.code === code);
+  if (!link) {
+    return res.status(404).json({ message: 'ไม่พบลิงก์นี้ในระบบ' });
+  }
+  return res.status(200).json({
+    link,
+    lotteries: lotteries.filter(l => l.status === 'open')
+  });
+});
+
 app.post('/api/v1/links', (req, res) => {
+  const code = 'ref_' + Math.random().toString(36).substring(4, 10);
   const newLink = {
     id: String(links.length + 1),
     name: req.body.name || 'ลิงก์ลูกค้าใหม่',
-    url: 'https://lotto.app/bet/ref_' + Math.random().toString(36).substring(4, 10),
-    expires: req.body.expires || '30 วัน',
+    code: code,
+    url: '/bet/' + code,
+    expires: req.body.duration || 'ไม่มีวันหมดอายุ',
     active: true,
     totalBet: 0
   };
@@ -318,6 +359,169 @@ app.delete('/api/v1/links/:id', (req, res) => {
     links.splice(index, 1);
   }
   res.status(200).json(links);
+});
+
+// --- NOTIFICATIONS API ---
+app.get('/api/v1/notifications', (req, res) => {
+  res.status(200).json(notifications);
+});
+
+app.post('/api/v1/notifications/read-all', (req, res) => {
+  notifications.forEach(n => n.read = true);
+  res.status(200).json({ success: true, notifications });
+});
+
+// --- PUBLIC BET VIA LINK API ---
+app.post('/api/v1/bet-via-link', (req, res) => {
+  const { linkCode, playerName, betsList } = req.body;
+  const link = links.find(l => l.code === linkCode);
+  
+  if (!link) {
+    return res.status(404).json({ message: 'ไม่พบลิงก์รับแทงนี้ หรือลิงก์อาจถูกลบไปแล้ว' });
+  }
+  if (!link.active) {
+    return res.status(400).json({ message: 'ลิงก์รับแทงนี้ปิดการใช้งานแล้ว' });
+  }
+  if (!betsList || !Array.isArray(betsList) || betsList.length === 0) {
+    return res.status(400).json({ message: 'รายการแทงไม่ถูกต้อง' });
+  }
+
+  const totalAmount = betsList.reduce((sum: number, b: any) => sum + Number(b.amount || 0), 0);
+  link.totalBet += totalAmount;
+
+  // Append new slips to global history
+  betsList.forEach((b: any) => {
+    const newSlip = {
+      id: String(Math.floor(10000 + Math.random() * 90000)),
+      time: new Date().toLocaleDateString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+      user: `ลิงก์: ${link.name} (${playerName || 'ลูกค้าทั่วไป'})`,
+      lotto: b.lottoName || 'หวยรัฐบาลไทย',
+      details: `${b.typeName || b.type} [${b.number}]`,
+      amount: Number(b.amount),
+      payout: 0,
+      status: 'pending'
+    };
+    slips.unshift(newSlip);
+
+    // Update progress of corresponding lottery
+    const targetLotto = lotteries.find(l => l.name === b.lottoName);
+    if (targetLotto) {
+      targetLotto.totalBet += Number(b.amount);
+      targetLotto.progress = Number(((targetLotto.totalBet / targetLotto.limit) * 100).toFixed(1));
+    }
+
+    // Record activity
+    recentActivities.unshift({
+      id: String(Date.now() + Math.random()),
+      title: `แทงผ่านลิงก์: ${link.name}`,
+      description: `${playerName || 'ลูกค้าทั่วไป'} • โพย #${newSlip.id}`,
+      time: 'เมื่อสักครู่',
+      amount: `฿${b.amount}`,
+      colorClass: 'bg-indigo-500',
+      amountClass: 'text-indigo-600 font-bold'
+    });
+  });
+
+  // Create notifications
+  notifications.unshift({
+    id: String(Date.now()),
+    title: `แทงผ่านลิงก์ [${link.name}]`,
+    message: `มีผู้แทงจากลิงก์เข้ามาใหม่โดยคุณ ${playerName || 'ทั่วไป'} ยอดแทงรวม ฿${totalAmount.toLocaleString()}`,
+    time: 'เมื่อสักครู่',
+    read: false
+  });
+
+  return res.status(201).json({ success: true, totalAmount, totalBet: link.totalBet });
+});
+
+// --- OCR & SMART LOTTERY PARSER API ---
+app.post('/api/v1/betting/ocr-parse', async (req, res) => {
+  try {
+    const { imageBase64, mimeType, textInput } = req.body;
+    const ai = getGeminiClient();
+
+    const contents: any[] = [];
+    const systemInstruction = `You are an expert Thai lottery slip parser.
+Your task is to parse Thai handwritten or typed lottery slips (from images or pasted text) and extract the list of bets.
+Translate colloquial terms to standard types:
+- 3 ตัวบน -> '3up'
+- 3 ตัวโต๊ด -> '3tod'
+- 2 ตัวบน -> '2up'
+- 2 ตัวล่าง -> '2down'
+- วิ่งบน / วิ่ง บ -> 'runup'
+- วิ่งล่าง / วิ่ง ล -> 'rundown'
+
+If a line has a 3-digit number and specifies "=100" or similar without a type, assume '3up' (3 ตัวบน). If it says "=100x100" or similar, the first is '3up' with amount 100, and the second is '3tod' with secondaryAmount 100.
+If a line has a 2-digit number, assume '2up' and '2down' if both are mentioned, or map 'บ' to '2up' and 'ล' to '2down'. If both are mentioned (e.g. บ-ล or บนล่าง), set type as '2up' and amount, and set secondaryAmount or flag so it can be handled.
+If '19 ประตู' or 'รูด' is mentioned for a number, set is19Doors to true.
+If 'กลับ' or 'ก' or 'x6' is mentioned, set isReverse to true.
+
+Always return a valid JSON array of bets. Keep numbers as strings (since they can have leading zeros like '05' or '003').`;
+
+    if (imageBase64) {
+      contents.push({
+        inlineData: {
+          mimeType: mimeType || "image/jpeg",
+          data: imageBase64
+        }
+      });
+      contents.push({
+        text: "Please perform OCR on this lottery slip image and extract all bets in JSON format according to the schema."
+      });
+    } else if (textInput) {
+      contents.push({
+        text: `Please parse this lottery slip text and extract all bets in JSON format according to the schema:\n\n${textInput}`
+      });
+    } else {
+      return res.status(400).json({ message: "กรุณาระบุรูปภาพหรือข้อความเพื่อประมวลผล" });
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            rawText: {
+              type: Type.STRING,
+              description: "Transcribed raw text from the image."
+            },
+            bets: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  number: { type: Type.STRING },
+                  type: { 
+                    type: Type.STRING,
+                    description: "strictly '3up', '3tod', '2up', '2down', 'runup', or 'rundown'"
+                  },
+                  amount: { type: Type.NUMBER },
+                  secondaryAmount: { type: Type.NUMBER },
+                  isReverse: { type: Type.BOOLEAN },
+                  is19Doors: { type: Type.BOOLEAN }
+                },
+                required: ["number", "type", "amount"]
+              }
+            }
+          },
+          required: ["bets"]
+        }
+      }
+    });
+
+    const parsedData = JSON.parse(response.text || '{"bets":[]}');
+    return res.status(200).json(parsedData);
+  } catch (error: any) {
+    console.error("OCR Parse error:", error);
+    return res.status(500).json({ 
+      message: "เกิดข้อผิดพลาดในการประมวลผลด้วย AI", 
+      details: error.message 
+    });
+  }
 });
 
 // --- DASHBOARD API ---

@@ -75,22 +75,29 @@ import { ApiService } from '../core/services/api.service';
           </div>
           <div class="divide-y divide-slate-100">
             @for (lotto of activeLotteries(); track lotto.id) {
-              <div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+              <div class="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
                 <div class="flex items-center space-x-4">
-                  <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-2xl shadow-sm">
-                    {{ lotto.flag }}
+                  <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xs font-black shadow-sm shrink-0 uppercase tracking-wider border"
+                       [class]="lotto.flag === '🇹🇭' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                                lotto.flag === '🇻🇳' ? 'bg-red-50 text-red-700 border-red-200' : 
+                                lotto.flag === '🇱🇦' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 
+                                lotto.flag === '🇲🇾' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-700 border-slate-200'">
+                    {{ lotto.flag === '🇹🇭' ? 'TH' : 
+                       lotto.flag === '🇻🇳' ? 'VN' : 
+                       lotto.flag === '🇱🇦' ? 'LA' : 
+                       lotto.flag === '🇲🇾' ? 'MY' : 'LOT' }}
                   </div>
                   <div>
-                    <h4 class="text-base font-semibold text-slate-900">{{ lotto.name }}</h4>
+                    <h4 class="text-base font-bold text-slate-900">{{ lotto.name }}</h4>
                     <p class="text-sm text-slate-500">งวดวันที่ {{ lotto.period }}</p>
                   </div>
                 </div>
-                <div class="text-right">
-                  <div class="text-sm font-medium text-slate-900 mb-1">ปิดรับแทง: {{ lotto.closeTime }}</div>
-                  <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="text-left sm:text-right flex flex-col sm:items-end w-full sm:w-auto">
+                  <div class="text-sm font-medium text-slate-900 mb-1">ปิดรับแทง: <span class="text-red-500 font-semibold">{{ lotto.closeTime }}</span></div>
+                  <div class="w-full sm:w-32 h-2 bg-slate-100 rounded-full overflow-hidden mb-1">
                     <div class="h-full bg-emerald-500 rounded-full" [style.width]="lotto.progress + '%'"></div>
                   </div>
-                  <div class="text-xs text-slate-500 mt-1">ยอดแทง {{ lotto.progress }}%</div>
+                  <div class="text-xs text-slate-500">ยอดแทง {{ lotto.progress }}%</div>
                 </div>
               </div>
             }

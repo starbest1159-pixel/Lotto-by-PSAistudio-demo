@@ -98,7 +98,10 @@ import { ApiService } from '../core/services/api.service';
             @for (result of resultsHistory(); track result.id) {
               <div class="p-6 hover:bg-slate-50/50 transition-colors">
                 <div class="flex items-center justify-between mb-4">
-                  <div class="font-bold text-slate-900">{{ result.lotteryId || 'หวยรัฐบาลไทย' }} (งวด {{ result.period }})</div>
+                  <div class="font-bold text-slate-900 flex items-center">
+                    <span class="mr-1.5 text-base leading-none">{{ getLottoFlag(result.lotteryId) }}</span>
+                    {{ result.lotteryId || 'หวยรัฐบาลไทย' }} (งวด {{ result.period }})
+                  </div>
                   <div class="text-sm text-slate-500">ประกาศเมื่อ {{ result.time }}</div>
                 </div>
                 
@@ -132,6 +135,15 @@ import { ApiService } from '../core/services/api.service';
 })
 export class ResultsComponent implements OnInit {
   private api = inject(ApiService);
+
+  getLottoFlag(name: string): string {
+    const lottoName = name || '';
+    if (lottoName.includes('ไทย') || lottoName.includes('TH')) return '🇹🇭';
+    if (lottoName.includes('ฮานอย') || lottoName.includes('เวียดนาม') || lottoName.includes('VN')) return '🇻🇳';
+    if (lottoName.includes('ลาว') || lottoName.includes('LA')) return '🇱🇦';
+    if (lottoName.includes('มาเลย์') || lottoName.includes('MY')) return '🇲🇾';
+    return '🎲';
+  }
 
   resultsHistory = signal<any[]>([]);
   activeLotteries = signal<any[]>([]);

@@ -81,8 +81,46 @@ import { AuthService } from '../core/services/auth.service';
             </button>
           </form>
           
-          <div class="mt-6 text-center text-xs text-slate-500">
-            <p>สำหรับทดสอบ: Username: <span class="text-slate-300 font-mono">admin</span> / Password: <span class="text-slate-300 font-mono">demo</span></p>
+          <div class="mt-6 border-t border-slate-700/60 pt-6">
+            <p class="text-xs font-bold text-slate-400 mb-3 text-center">เข้าใช้งานด่วนสำหรับผู้ใช้ทุกสิทธิ์ (ทางเข้าเดียวกัน)</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button 
+                type="button"
+                (click)="quickLogin('admin_super')"
+                class="p-2.5 rounded-xl bg-slate-900/40 hover:bg-slate-700/50 border border-slate-700/60 text-left transition-all cursor-pointer group"
+              >
+                <div class="text-[11px] font-black text-emerald-400">Super Admin</div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">user: admin_super</div>
+              </button>
+
+              <button 
+                type="button"
+                (click)="quickLogin('master_bkk')"
+                class="p-2.5 rounded-xl bg-slate-900/40 hover:bg-slate-700/50 border border-slate-700/60 text-left transition-all cursor-pointer group"
+              >
+                <div class="text-[11px] font-black text-blue-400">Master Bangkok</div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">user: master_bkk</div>
+              </button>
+
+              <button 
+                type="button"
+                (click)="quickLogin('agent_007')"
+                class="p-2.5 rounded-xl bg-slate-900/40 hover:bg-slate-700/50 border border-slate-700/60 text-left transition-all cursor-pointer group"
+              >
+                <div class="text-[11px] font-black text-purple-400">Agent Seven</div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">user: agent_007</div>
+              </button>
+
+              <button 
+                type="button"
+                (click)="quickLogin('member_vip')"
+                class="p-2.5 rounded-xl bg-slate-900/40 hover:bg-slate-700/50 border border-slate-700/60 text-left transition-all cursor-pointer group"
+              >
+                <div class="text-[11px] font-black text-amber-400">VIP Player</div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">user: member_vip</div>
+              </button>
+            </div>
+            <p class="text-center text-[10px] text-slate-500 mt-3">รหัสผ่านสำหรับทุกสิทธิ์การใช้งานด้านบนคือ <span class="text-slate-300 font-bold">demo</span></p>
           </div>
         </div>
       </div>
@@ -95,7 +133,7 @@ export class LoginComponent {
   private authService = inject(AuthService);
 
   loginForm = this.fb.group({
-    username: ['admin', Validators.required],
+    username: ['admin_super', Validators.required],
     password: ['demo', Validators.required]
   });
 
@@ -105,6 +143,14 @@ export class LoginComponent {
 
   togglePassword() {
     this.showPassword.update(v => !v);
+  }
+
+  quickLogin(username: string) {
+    this.loginForm.patchValue({
+      username,
+      password: 'demo'
+    });
+    this.onSubmit();
   }
 
   onSubmit() {
